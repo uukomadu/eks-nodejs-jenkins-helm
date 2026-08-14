@@ -6,7 +6,8 @@ image:
   pullPolicy: Always
 
 service:
-  type: ClusterIP
+  # Instance-mode ALBs route through a node port instead of directly to pod ENIs.
+  type: NodePort
   port: 80
   targetPort: 3000
 
@@ -39,7 +40,7 @@ ingress:
   className: alb
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/target-type: instance
     alb.ingress.kubernetes.io/healthcheck-path: /
   path: /
   pathType: Prefix

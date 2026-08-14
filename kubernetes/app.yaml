@@ -43,7 +43,8 @@ kind: Service
 metadata:
   name: node-app-service
 spec:
-  type: ClusterIP
+  # Instance-mode ALBs route through a node port instead of directly to pod ENIs.
+  type: NodePort
   selector:
     app: node-app
   ports:
@@ -81,7 +82,7 @@ metadata:
   name: node-app
   annotations:
     alb.ingress.kubernetes.io/scheme: internet-facing
-    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/target-type: instance
     alb.ingress.kubernetes.io/healthcheck-path: /
 spec:
   ingressClassName: alb
