@@ -12,6 +12,14 @@ spec:
       labels:
         app: node-app
     spec:
+      # Keep replicas balanced across available worker nodes.
+      topologySpreadConstraints:
+        - maxSkew: 1
+          topologyKey: kubernetes.io/hostname
+          whenUnsatisfiable: DoNotSchedule
+          labelSelector:
+            matchLabels:
+              app: node-app
       containers:
         - name: node-app
           image: 506570851351.dkr.ecr.us-east-2.amazonaws.com/node-app:latest

@@ -100,3 +100,29 @@ resource "aws_eks_node_group" "eks-worker-node" {
     aws_iam_role_policy_attachment.eks_node_policy
   ]
 }
+
+# Tag every managed node group's Auto Scaling group for Cluster Autoscaler discovery.
+resource "aws_autoscaling_group_tag" "cluster_autoscaler_enabled" {
+  for_each = aws_eks_node_group.eks-worker-node
+
+  autoscaling_group_name = each.value.resources[0].autoscaling_groups[0].name
+
+  tag {
+    key                 = "k8s.io/cluster-autoscaler/enabled"
+    value               = "true"
+    propagate_at_launch = false
+  }
+}
+
+# Limit auto-discovery to Auto Scaling groups owned by this EKS cluster.
+resource "aws_autoscaling_group_tag" "cluster_autoscaler_cluster" {
+  for_each = aws_eks_node_group.eks-worker-node
+
+  autoscaling_group_name = each.value.resources[0].autoscaling_groups[0].name
+
+  tag {
+    key                 = "k8s.io/cluster-autoscaler/${var.eks_cluster_name}"
+    value               = "owned"
+    propagate_at_launch = false
+  }
+}

@@ -49,6 +49,8 @@ The AWS infrastructure includes:
 10. One Amazon ECR repository named `node-app`
 11. One EC2 instance running Jenkins with an Elastic IP address
 12. IAM roles for EKS, worker nodes, Jenkins, and the AWS Load Balancer Controller
+13. Kubernetes Metrics Server for CPU and memory metrics
+14. Kubernetes Cluster Autoscaler with IRSA permissions
 
 The request and deployment flow is:
 
@@ -232,7 +234,7 @@ Terraform state files, provider binaries, private keys, environment files, and N
 
 The `vpc` module creates the VPC, public and private subnets, internet gateway, NAT gateways, route tables, and Kubernetes subnet discovery tags. Public subnets host internet-facing resources. EKS worker nodes use the private subnets and reach external services through the NAT gateways.
 
-The `eks` module creates the EKS control plane, cluster IAM role, worker-node IAM role, and managed node group. The node group uses `t3.small` instances with the following scaling configuration:
+The `eks` module creates the EKS control plane, cluster IAM role, worker-node IAM role, and managed node group. It also adds the Auto Scaling group discovery tags used by Cluster Autoscaler. The node group uses `t3.small` instances with the following scaling configuration:
 
 ```
 Minimum nodes: 1
@@ -241,6 +243,8 @@ Maximum nodes: 4
 ```
 
 The `alb` module creates the EKS OIDC provider and an IAM role for service accounts. It attaches the permissions required by the AWS Load Balancer Controller and installs the controller through its official Helm chart. Kubernetes Ingress resources then cause the controller to create and manage ALBs, listeners, target groups, security groups, and registered targets.
+
+The `autoscaling` module installs Metrics Server and Cluster Autoscaler with Helm. Metrics Server supplies CPU and memory utilization to the HPA. Cluster Autoscaler uses IRSA and tagged managed node groups to adjust the worker-node count between one and four when pods cannot be scheduled or nodes remain underused.
 
 The `jenkins` module creates an Amazon Linux 2023 EC2 instance, encrypted root volume, IAM instance profile, security group, and Elastic IP address. The instance role lets Jenkins push images to ECR and describe the EKS cluster. Terraform also creates an EKS access entry and associates the cluster administrator policy with the Jenkins role so the pipeline can deploy with kubectl and Helm.
 
@@ -286,19 +290,21 @@ The ALB Ingress is internet-facing, uses instance targets, and checks `/` for ta
 
 The `kubernetes/app.yaml` file contains equivalent plain Kubernetes manifests for reference or manual deployment. Jenkins deploys the Helm chart.
 
-# Metrics Server
+# Metrics Server and Cluster Autoscaler
 
-The Horizontal Pod Autoscaler requires Kubernetes resource metrics. If Metrics Server is not already installed, install it before testing autoscaling:
-
-```
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
-```
-
-Verify metrics:
+Terraform installs both cluster services in the `kube-system` namespace. Verify their deployments:
 
 ```
+kubectl rollout status deployment/metrics-server --namespace kube-system
+kubectl rollout status deployment/cluster-autoscaler-aws-cluster-autoscaler --namespace kube-system
 kubectl top nodes
 kubectl top pods --namespace node-app
+```
+
+If the exact Cluster Autoscaler deployment name differs in a newer chart version, locate it with:
+
+```
+kubectl get deployments --namespace kube-system | grep autoscaler
 ```
 
 # Jenkins Setup
@@ -487,7 +493,21 @@ kubectl get pods --namespace node-app -o wide
 kubectl get hpa --namespace node-app
 ```
 
-The HPA controls pod replicas. The EKS managed node group's minimum and maximum values define node capacity, but automatic node scaling also requires an EKS-compatible node autoscaler such as Karpenter or Cluster Autoscaler. The current Terraform configuration defines the node group's range but does not install one of those node autoscalers.
+The HPA controls the total application replica count from one to three. A required hostname topology-spread constraint permits one application replica per worker node, so additional HPA replicas remain pending until Cluster Autoscaler adds capacity. Cluster Autoscaler independently controls the managed node group from one to four nodes. HPA does not provide a per-node replica limit; it sets the workload's total replicas.
+
+Monitor both scaling layers during a load test:
+
+```
+watch kubectl get nodes,pods,hpa --namespace node-app
+```
+
+View Cluster Autoscaler decisions:
+
+```
+kubectl logs deployment/cluster-autoscaler-aws-cluster-autoscaler \
+  --namespace kube-system \
+  --tail=200
+```
 
 # Troubleshooting
 
@@ -540,7 +560,7 @@ The following changes are recommended for a production deployment:
 6. Reduce the Jenkins EKS permissions from cluster administrator to the required namespaces and resources.
 7. Enable S3 bucket versioning and restrict access to the Terraform state bucket.
 8. Add CloudWatch alarms for unhealthy targets, failed deployments, and high utilization.
-9. Add a node autoscaler if workloads must automatically increase the EKS node count.
+9. Add Pod Disruption Budgets for critical workloads before using this design in production.
 
 # Cleanup
 

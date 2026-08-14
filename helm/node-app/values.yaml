@@ -35,6 +35,13 @@ autoscaling:
   targetCPUUtilizationPercentage: 50
   targetMemoryUtilizationPercentage: 50
 
+# Spread HPA-created replicas across worker nodes whenever multiple nodes exist.
+topologySpreadConstraints:
+  enabled: true
+  maxSkew: 1
+  topologyKey: kubernetes.io/hostname
+  whenUnsatisfiable: DoNotSchedule
+
 ingress:
   enabled: true
   className: alb

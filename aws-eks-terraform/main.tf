@@ -86,6 +86,22 @@ module "alb" {
   depends_on = [module.eks]
 }
 
+module "autoscaling" {
+  source = "./modules/autoscaling"
+
+  cluster_name            = module.eks.cluster_name
+  cluster_oidc_issuer_url = module.eks.cluster_oidc_issuer_url
+  oidc_provider_arn       = module.alb.oidc_provider_arn
+  aws_region              = var.aws_region
+  cluster_version         = var.cluster_version
+  tags = {
+    Project     = var.project_name
+    Environment = var.environment
+  }
+
+  depends_on = [module.eks, module.alb]
+}
+
 module "jenkins" {
   source = "./modules/jenkins"
 

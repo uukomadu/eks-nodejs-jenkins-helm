@@ -27,3 +27,18 @@ output "jenkins_iam_role_arn" {
   description = "IAM role authorized to push to ECR and deploy to EKS"
   value       = module.jenkins.iam_role_arn
 }
+
+output "cluster_autoscaler_role_arn" {
+  description = "IAM role used by Kubernetes Cluster Autoscaler"
+  value       = module.autoscaling.cluster_autoscaler_role_arn
+}
+
+output "cluster_autoscaler_release_name" {
+  description = "Cluster Autoscaler Helm release name"
+  value       = module.autoscaling.cluster_autoscaler_release_name
+}
+
+output "metrics_server_release_name" {
+  description = "Metrics Server Helm release name"
+  value       = module.autoscaling.metrics_server_release_name
+}
