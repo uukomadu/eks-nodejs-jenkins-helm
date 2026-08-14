@@ -562,6 +562,18 @@ The following changes are recommended for a production deployment:
 8. Add CloudWatch alarms for unhealthy targets, failed deployments, and high utilization.
 9. Add Pod Disruption Budgets for critical workloads before using this design in production.
 
+# GitOps Alternative Branch
+
+The required GitOps alternative is implemented separately on the `gitops`
+branch so the Jenkins solution on `main` remains unchanged. It uses GitHub
+Actions to build and push immutable images to ECR, then records the image tag in
+the Helm values. Argo CD watches the `gitops` branch and automatically deploys
+that desired state to EKS.
+
+See `gitops/README.md` on the `gitops` branch for the Terraform bootstrap,
+private-repository registration, GitHub Actions variable, first build, and
+verification steps.
+
 # Cleanup
 
 Destroy the Terraform-managed resources when they are no longer needed:

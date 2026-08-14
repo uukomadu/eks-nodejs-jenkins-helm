@@ -1,0 +1,89 @@
+name: GitOps CI
+
+on:
+  push:
+    branches: [gitops]
+    paths-ignore:
+      - helm/node-app/values.yaml
+      - "**/*.md"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  id-token: write
+
+concurrency:
+  group: gitops-image-${{ github.ref }}
+  cancel-in-progress: false
+
+env:
+  AWS_REGION: us-east-2
+  ECR_REPOSITORY: node-app
+  HELM_VALUES_FILE: helm/node-app/values.yaml
+
+jobs:
+  build-push-update:
+    name: Build, push, and update GitOps state
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the GitOps branch
+        uses: actions/checkout@v5
+        with:
+          ref: gitops
+          fetch-depth: 0
+
+      - name: Configure AWS credentials through GitHub OIDC
+        uses: aws-actions/configure-aws-credentials@v6.2.3
+        with:
+          role-to-assume: ${{ vars.AWS_GITHUB_ACTIONS_ROLE_ARN }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Sign in to Amazon ECR
+        id: ecr-login
+        uses: aws-actions/amazon-ecr-login@v2.1.6
+
+      - name: Build and push the application image
+        env:
+          ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          IMAGE_URI="${ECR_REGISTRY}/${ECR_REPOSITORY}"
+          docker build --tag "${IMAGE_URI}:${IMAGE_TAG}" --tag "${IMAGE_URI}:latest" .
+          docker push "${IMAGE_URI}:${IMAGE_TAG}"
+          docker push "${IMAGE_URI}:latest"
+
+      - name: Record the immutable image tag for Argo CD
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          python3 - <<'PY'
+          import os
+          import re
+          from pathlib import Path
+
+          values_path = Path(os.environ["HELM_VALUES_FILE"])
+          values = values_path.read_text()
+          updated, count = re.subn(
+              r"(?m)^(image:\n(?:^[ \t].*\n)*?^[ \t]+tag:).*$",
+              rf"\1 {os.environ['IMAGE_TAG']}",
+              values,
+              count=1,
+          )
+          if count != 1:
+              raise SystemExit("Unable to update image.tag in Helm values")
+          values_path.write_text(updated)
+          PY
+
+      - name: Commit the desired image state
+        env:
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add "${HELM_VALUES_FILE}"
+          git diff --cached --quiet && exit 0
+          git commit -m "Deploy image ${IMAGE_TAG} [skip ci]"
+          git pull --rebase origin gitops
+          git push origin HEAD:gitops
