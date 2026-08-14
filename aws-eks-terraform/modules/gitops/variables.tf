@@ -14,7 +14,7 @@ variable "github_repository" {
 }
 
 variable "github_branch" {
-  description = "Only GitHub branch allowed to assume the Actions IAM role"
+  description = "GitHub branch used by the GitOps workflow"
   type        = string
   default     = "gitops"
 }

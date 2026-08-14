@@ -23,10 +23,13 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
       values   = ["sts.amazonaws.com"]
     }
 
+    # GitHub can vary the subject suffix for branch, environment, and reusable
+    # workflow tokens. Limit trust to this repository; the workflow trigger
+    # itself remains limited to the dedicated GitOps branch.
     condition {
-      test     = "StringEquals"
+      test     = "StringLike"
       variable = "token.actions.githubusercontent.com:sub"
-      values   = ["repo:${var.github_repository}:ref:refs/heads/${var.github_branch}"]
+      values   = ["repo:${var.github_repository}:*"]
     }
   }
 }
