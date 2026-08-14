@@ -32,11 +32,6 @@ resource "aws_eks_cluster" "main-eks-cluster" {
     subnet_ids = var.subnet_id
   }
 
-  # Protect the shared cluster from accidental replacement or deletion.
-  lifecycle {
-    prevent_destroy = true
-  }
-
   # Ensure that IAM Role permissions are created before and deleted
   # after EKS Cluster handling. Otherwise, EKS will not be able to
   # properly delete EKS managed EC2 infrastructure such as Security Groups.
