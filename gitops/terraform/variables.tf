@@ -22,6 +22,30 @@ variable "github_repository" {
   default     = "uukomadu/devops-code-challenge2"
 }
 
+variable "github_owner" {
+  description = "GitHub repository owner"
+  type        = string
+  default     = "uukomadu"
+}
+
+variable "github_owner_id" {
+  description = "Immutable numeric ID of the GitHub repository owner"
+  type        = string
+  default     = "30909268"
+}
+
+variable "github_repository_name" {
+  description = "GitHub repository name"
+  type        = string
+  default     = "devops-code-challenge2"
+}
+
+variable "github_repository_id" {
+  description = "Immutable numeric ID of the GitHub repository"
+  type        = string
+  default     = "1333687363"
+}
+
 variable "ecr_repository_name" {
   description = "Existing ECR repository that receives application images"
   type        = string

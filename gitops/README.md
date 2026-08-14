@@ -31,8 +31,10 @@ The module reuses the account-wide GitHub Actions OIDC provider that already
 exists in this AWS account and creates only the repository- and branch-scoped
 IAM role.
 
-The IAM trust policy accepts OIDC subjects only from this repository. The
-workflow trigger separately restricts execution to the `gitops` branch.
+The IAM trust policy accepts both the legacy name-based and immutable ID-based
+OIDC subjects for this repository. GitHub uses immutable subjects for
+repositories created after July 15, 2026. The workflow trigger separately
+restricts execution to the `gitops` branch.
 
 This bootstrap uses `gitops/terraform-state-file` in the existing S3 state
 bucket. Its state is intentionally separate from the Jenkins infrastructure

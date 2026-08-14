@@ -46,11 +46,15 @@ provider "helm" {
 module "gitops" {
   source = "../../aws-eks-terraform/modules/gitops"
 
-  project_name        = var.project_name
-  aws_region          = var.aws_region
-  github_repository   = var.github_repository
-  github_branch       = "gitops"
-  ecr_repository_name = var.ecr_repository_name
+  project_name           = var.project_name
+  aws_region             = var.aws_region
+  github_repository      = var.github_repository
+  github_owner           = var.github_owner
+  github_owner_id        = var.github_owner_id
+  github_repository_name = var.github_repository_name
+  github_repository_id   = var.github_repository_id
+  github_branch          = "gitops"
+  ecr_repository_name    = var.ecr_repository_name
   tags = {
     Project     = var.project_name
     Environment = "gitops"
