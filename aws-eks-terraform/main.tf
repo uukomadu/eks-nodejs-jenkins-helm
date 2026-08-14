@@ -110,15 +110,14 @@ resource "aws_eks_access_entry" "jenkins" {
   type          = "STANDARD"
 }
 
-# Limit Jenkins administration to the namespace used by the Helm release.
+# Grant Jenkins cluster administration so it can create the application namespace and deploy the Helm release.
 resource "aws_eks_access_policy_association" "jenkins" {
   cluster_name  = module.eks.cluster_name
   principal_arn = module.jenkins.iam_role_arn
-  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSAdminPolicy"
+  policy_arn    = "arn:aws:eks::aws:cluster-access-policy/AmazonEKSClusterAdminPolicy"
 
   access_scope {
-    type       = "namespace"
-    namespaces = [var.application_namespace]
+    type = "cluster"
   }
 
   depends_on = [aws_eks_access_entry.jenkins]

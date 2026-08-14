@@ -87,9 +87,3 @@ variable "jenkins_allowed_cidr_blocks" {
   type        = list(string)
   default     = ["0.0.0.0/0"]
 }
-
-variable "application_namespace" {
-  description = "Kubernetes namespace administered by Jenkins"
-  type        = string
-  default     = "node-app"
-}

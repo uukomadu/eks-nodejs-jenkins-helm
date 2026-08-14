@@ -17,7 +17,7 @@ spec:
           image: 506570851351.dkr.ecr.us-east-2.amazonaws.com/node-app:latest
           imagePullPolicy: Always
           ports:
-            - containerPort: 8080
+            - containerPort: 3000
           resources:
             requests:
               cpu: '100m'
@@ -28,13 +28,13 @@ spec:
           readinessProbe:
             httpGet:
               path: /
-              port: 8080
+              port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
               path: /
-              port: 8080
+              port: 3000
             initialDelaySeconds: 15
             periodSeconds: 20
 ---
@@ -48,7 +48,7 @@ spec:
     app: node-app
   ports:
     - port: 80
-      targetPort: 8080
+      targetPort: 3000
 ---
 apiVersion: autoscaling/v2
 kind: HorizontalPodAutoscaler

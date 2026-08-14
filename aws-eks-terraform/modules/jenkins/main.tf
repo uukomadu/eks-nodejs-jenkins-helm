@@ -131,13 +131,18 @@ resource "aws_instance" "jenkins_master" {
   })
 }
 
-# Keep the Jenkins address stable across instance stop/start cycles.
+# Allocate a stable public IPv4 address for Jenkins.
 resource "aws_eip" "jenkins_master" {
-  instance = aws_instance.jenkins_master.id
-  domain   = "vpc"
+  domain = "vpc"
 
   tags = merge(var.tags, {
     Name        = "${var.project_name}-jenkins-master-eip"
     Environment = var.environment
   })
+}
+
+# Explicitly attach the Elastic IP to the Jenkins instance.
+resource "aws_eip_association" "jenkins_master" {
+  allocation_id = aws_eip.jenkins_master.id
+  instance_id   = aws_instance.jenkins_master.id
 }

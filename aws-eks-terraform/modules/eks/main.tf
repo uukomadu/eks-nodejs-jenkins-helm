@@ -28,13 +28,13 @@ resource "aws_eks_cluster" "main-eks-cluster" {
   role_arn = aws_iam_role.eks-cluster-role.arn
   version  = var.cluster_version
 
-  # Permit IAM principals such as the Jenkins instance role to use EKS access entries.
-  access_config {
-    authentication_mode = "API_AND_CONFIG_MAP"
-  }
-
   vpc_config {
     subnet_ids = var.subnet_id
+  }
+
+  # Protect the shared cluster from accidental replacement or deletion.
+  lifecycle {
+    prevent_destroy = true
   }
 
   # Ensure that IAM Role permissions are created before and deleted

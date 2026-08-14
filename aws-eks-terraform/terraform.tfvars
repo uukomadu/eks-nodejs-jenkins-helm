@@ -46,6 +46,3 @@ jenkins_key_name = "1PU"
 
 # Matches challenge1 so the Jenkins site is reachable for project review.
 jenkins_allowed_cidr_blocks = ["0.0.0.0/0"]
-
-# Namespace used by the Helm release configured in Jenkins.
-application_namespace = "node-app"
