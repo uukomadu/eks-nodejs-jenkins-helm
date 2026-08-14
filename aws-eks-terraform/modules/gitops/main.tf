@@ -1,17 +1,9 @@
 # Read the active AWS account so the ECR policy is scoped to this account.
 data "aws_caller_identity" "current" {}
 
-# Read GitHub's TLS certificate to configure the AWS OIDC identity provider.
-data "tls_certificate" "github_actions" {
-  url = "https://token.actions.githubusercontent.com"
-}
-
-# Register GitHub Actions as an AWS federated identity provider.
-resource "aws_iam_openid_connect_provider" "github_actions" {
-  url             = "https://token.actions.githubusercontent.com"
-  client_id_list  = ["sts.amazonaws.com"]
-  thumbprint_list = [data.tls_certificate.github_actions.certificates[0].sha1_fingerprint]
-  tags            = var.tags
+# Reuse the account-wide GitHub Actions OIDC provider that already exists.
+locals {
+  github_actions_oidc_provider_arn = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/token.actions.githubusercontent.com"
 }
 
 # Restrict role assumption to this repository's dedicated GitOps branch.
@@ -22,7 +14,7 @@ data "aws_iam_policy_document" "github_actions_assume_role" {
 
     principals {
       type        = "Federated"
-      identifiers = [aws_iam_openid_connect_provider.github_actions.arn]
+      identifiers = [local.github_actions_oidc_provider_arn]
     }
 
     condition {

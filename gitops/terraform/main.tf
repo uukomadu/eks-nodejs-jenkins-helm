@@ -8,10 +8,6 @@ terraform {
       source  = "hashicorp/helm"
       version = "~> 3.0"
     }
-    tls = {
-      source  = "hashicorp/tls"
-      version = "~> 4.0"
-    }
   }
 
   # Keep GitOps resources isolated from the main challenge Terraform state.

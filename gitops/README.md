@@ -27,6 +27,10 @@ terraform plan
 terraform apply
 ```
 
+The module reuses the account-wide GitHub Actions OIDC provider that already
+exists in this AWS account and creates only the repository- and branch-scoped
+IAM role.
+
 This bootstrap uses `gitops/terraform-state-file` in the existing S3 state
 bucket. Its state is intentionally separate from the Jenkins infrastructure
 state, so applying either branch cannot remove resources owned by the other.
